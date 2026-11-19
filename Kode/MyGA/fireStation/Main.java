@@ -197,7 +197,7 @@ public class Main {
         }
 
         // Pengujian Genetic Algorithm
-        System.out.println("\n===== GENETIC ALGORITHM =====");
+        System.out.println("\n===== GENETIC ALGORITHM BINARY =====");
 
         // Menggunakan Binary Representation dan Elitism
         GeneticAlgorithm ga = new GeneticAlgorithm(
@@ -216,5 +216,25 @@ public class Main {
         System.out.println("\nHasil Terbaik Genetic Algorithm:");
         System.out.println("Cost: " + bestSolution.cost);
         System.out.println("Fitness: " + bestSolution.fitness);
+
+        System.out.println("\n===== GENETIC ALGORITHM INTEGER =====");
+
+        // Menggunakan Integer Representation dan Elitism
+        GeneticAlgorithm ga2 = new GeneticAlgorithm(
+            map,
+            false,  // Integer Representation
+            true,   // Elitism Replacement
+            10,     // Population Size
+            100,    // Maximum Generations
+            0.8,    // Crossover Rate
+            0.1,    // Mutation Rate
+            random
+        );
+
+        Individual bestSolution2 = ga2.run();
+
+        System.out.println("\nHasil Terbaik Genetic Algorithm Integer:");
+        System.out.println("Cost: " + bestSolution2.cost);
+        System.out.println("Fitness: " + bestSolution2.fitness);
     }
 }
