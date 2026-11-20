@@ -5,26 +5,39 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Scanner;
 
+/**
+ * Merepresentasikan data lingkungan peta masalah penempatan stasiun pemadam kebakaran.
+ * Bertanggung jawab membaca konfigurasi grid dari file input, memetakan koordinat rumah
+ * serta kandidat sel kosong, dan melakukan pra-komputasi matriks jarak terpendek antar sel
+ * menggunakan algoritma Breadth-First Search (BFS).
+ */
 public class MapData {
 
-    // Ukuran peta dan jumlah fire station
+    /** Dimensi baris (m), dimensi kolom (n), dan target jumlah stasiun pemadam kebakaran (p). */
     int m, n, p;
 
-    // Menyimpan isi peta
+    /** Representasi karakter dua dimensi dari tata letak peta ('.' = kosong, 'H' = rumah, dll.). */
     char[][] grid;
 
-    // Menyimpan posisi sel kosong dan rumah
+    /** Daftar koordinat [baris, kolom] untuk seluruh sel kosong (kandidat lokasi) dan rumah. */
     ArrayList<int[]> emptyCells;
     ArrayList<int[]> houses;
 
-    // Menyimpan jarak setiap rumah ke setiap sel kosong
+    /** Matriks jarak terpendek pre-computed dengan ukuran [jumlah_rumah][jumlah_sel_kosong]. */
     int[][] distances;
 
+    /**
+     * Memuat dimensi dan tata letak peta dari file teks eksternal, mengelompokkan
+     * posisi rumah dan sel kosong, lalu langsung menghitung matriks jarak terpendeknya.
+     *
+     * @param fileName Path atau nama file teks yang berisi definisi peta masalah.
+     * @throws FileNotFoundException Jika file peta yang ditentukan tidak ditemukan.
+     */
     public MapData(String fileName) throws FileNotFoundException {
 
         Scanner sc = new Scanner(new File(fileName));
 
-        // Membaca ukuran peta dan jumlah fire station
+        // Membaca parameter dimensi grid (m x n) serta jumlah stasiun (p) pada baris pertama
         m = sc.nextInt();
         n = sc.nextInt();
         p = sc.nextInt();
@@ -35,7 +48,7 @@ public class MapData {
         emptyCells = new ArrayList<>();
         houses = new ArrayList<>();
 
-        // Membaca isi peta
+        // Memindai setiap sel peta untuk memisahkan koordinat kandidat lokasi ('.') dan rumah ('H')
         for (int i = 0; i < m; i++) {
 
             String line = sc.nextLine();
@@ -44,12 +57,10 @@ public class MapData {
 
                 grid[i][j] = line.charAt(j);
 
-                // Mencatat posisi sel kosong
                 if (grid[i][j] == '.') {
                     emptyCells.add(new int[]{i, j});
                 }
 
-                // Mencatat posisi rumah
                 else if (grid[i][j] == 'H') {
                     houses.add(new int[]{i, j});
                 }
@@ -58,20 +69,25 @@ public class MapData {
 
         sc.close();
 
-        // Menghitung jarak menggunakan BFS
+        // Melakukan pra-komputasi jarak agar evaluasi fitness GA berjalan dalam waktu konstan O(1)
         calculateDistances();
     }
 
+    /**
+     * Menghitung jarak lintasan terpendek (jarak Manhattan berbasis grid dengan rintangan)
+     * dari setiap rumah menuju seluruh sel kosong menggunakan algoritma Breadth-First Search (BFS).
+     * Sel yang tidak dapat dijangkau akan diberi nilai penalti sebesar (m * n).
+     */
     private void calculateDistances() {
 
         distances = new int[houses.size()][emptyCells.size()];
 
-        // BFS dilakukan untuk setiap rumah
+        // Menjalankan penelusuran BFS independen dengan titik awal masing-masing rumah
         for (int h = 0; h < houses.size(); h++) {
 
             int[][] distanceMap = new int[m][n];
 
-            // -1 berarti belum dikunjungi
+            // Menginisialisasi seluruh sel sebagai belum dikunjungi (-1)
             for (int i = 0; i < m; i++) {
                 for (int j = 0; j < n; j++) {
                     distanceMap[i][j] = -1;
@@ -86,7 +102,7 @@ public class MapData {
             queue.add(new int[]{startX, startY});
             distanceMap[startX][startY] = 0;
 
-            // Arah pergerakan: atas, bawah, kiri, kanan
+            // Vektor pergeseran 4-arah ortogonal: atas, bawah, kiri, dan kanan
             int[] dx = {-1, 1, 0, 0};
             int[] dy = {0, 0, -1, 1};
 
@@ -97,23 +113,23 @@ public class MapData {
                 int x = current[0];
                 int y = current[1];
 
-                // Memeriksa empat arah
+                // Mengeksplorasi tetangga pada keempat arah pergerakan yang valid
                 for (int d = 0; d < 4; d++) {
 
                     int nx = x + dx[d];
                     int ny = y + dy[d];
 
-                    // Memastikan posisi masih di dalam peta
+                    // Melewati sel jika berada di luar batas grid peta
                     if (nx < 0 || nx >= m || ny < 0 || ny >= n) {
                         continue;
                     }
 
-                    // Hanya sel kosong yang boleh dilewati
+                    // Membatasi penelusuran hanya melalui jalur sel kosong ('.') yang dapat dilalui
                     if (grid[nx][ny] != '.') {
                         continue;
                     }
 
-                    // Memastikan sel belum pernah dikunjungi
+                    // Melewati sel yang sudah memiliki catatan jarak terpendek sebelumnya
                     if (distanceMap[nx][ny] != -1) {
                         continue;
                     }
@@ -124,7 +140,7 @@ public class MapData {
                 }
             }
 
-            // Memindahkan hasil BFS ke matriks distances
+            // Memetakan hasil jarak BFS ke matriks distances; beri penalti (m * n) jika sel terisolasi
             for (int e = 0; e < emptyCells.size(); e++) {
 
                 int x = emptyCells.get(e)[0];

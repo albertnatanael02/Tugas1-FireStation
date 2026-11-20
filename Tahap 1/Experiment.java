@@ -2,17 +2,39 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.Random;
 
+/**
+ * Kelas utama untuk menjalankan eksperimen pengujian parameter Algoritma Genetika (GA).
+ * Mengevaluasi berbagai kombinasi representasi kromosom, metode seleksi, crossover,
+ * dan mutasi pada sejumlah peta uji (testcase), lalu mencatat hasilnya ke dalam file CSV.
+ */
 public class Experiment {
 
-    // Parameter eksperimen
+    /** Jumlah individu dalam populasi untuk setiap generasi GA. */
     private static final int POPULATION_SIZE = 10;
+
+    /** Batas maksimum iterasi generasi dalam satu kali eksekusi GA. */
     private static final int MAX_GENERATIONS = 100;
+
+    /** Probabilitas terjadinya rekombinasi (crossover) antar induk. */
     private static final double CROSSOVER_RATE = 0.8;
+
+    /** Probabilitas terjadinya perubahan acak (mutasi) pada gen individu. */
     private static final double MUTATION_RATE = 0.1;
+
+    /** Jumlah pengulangan eksekusi per konfigurasi untuk memperoleh validitas statistik. */
     private static final int REPETITIONS = 30;
 
+    /**
+     * Titik masuk utama program untuk mengeksekusi seluruh skenario pengujian.
+     * Menjalankan kombinasi parameter secara sistematis, menghitung statistik performa
+     * (biaya terbaik, rata-rata, terburuk, serta waktu komputasi), dan menyimpannya ke disk.
+     *
+     * @param args Argumen baris perintah (tidak digunakan dalam eksperimen ini).
+     * @throws Exception Jika terjadi kesalahan pembacaan file peta atau penulisan file output CSV.
+     */
     public static void main(String[] args) throws Exception {
 
+        // Daftar path file peta uji berukuran n=40 dengan karakteristik acak, klaster, dan labirin
         String[] testCases = {
             "TestCases/n40/n40_acak_01.txt",
             "TestCases/n40/n40_acak_02.txt",
@@ -28,7 +50,7 @@ public class Experiment {
             "TestCases/n40/n40_labirin_04.txt"
         };
 
-        // Menyiapkan file CSV
+        // Inisialisasi writer untuk mencatat log mentah setiap repetisi dan ringkasan agregat per konfigurasi
         BufferedWriter detailWriter = new BufferedWriter(
             new FileWriter("experiment_detail.csv")
         );
@@ -37,20 +59,19 @@ public class Experiment {
             new FileWriter("experiment_summary.csv")
         );
 
-        // Header CSV detail
         detailWriter.write(
             "TestCase,Representation,Selection,Crossover,Mutation," +
             "Repetition,Seed,BestCost,RuntimeMs"
         );
         detailWriter.newLine();
 
-        // Header CSV summary
         summaryWriter.write(
             "TestCase,Representation,Selection,Crossover,Mutation," +
             "BestCost,AverageCost,WorstCost,AverageRuntimeMs"
         );
         summaryWriter.newLine();
 
+        // Konfigurasi jenis representasi kromosom (true = biner, false = integer) beserta daftar operator GA yang diuji
         boolean[] representations = {true, false};
 
         GeneticAlgorithm.SelectionType[] selections = {
@@ -63,14 +84,11 @@ public class Experiment {
             GeneticAlgorithm.CrossoverType.TWO_POINT
         };
 
-        // Menyimpan statistik overall
+        // Variabel pelacak konfigurasi dengan rata-rata cost terendah di seluruh skenario
         String overallBestCombination = "";
         double overallBestAverageCost = Double.MAX_VALUE;
 
-        // ==========================================================
-        // LOOP TESTCASE
-        // ==========================================================
-
+        // Iterasi utama untuk memuat dan menguji setiap peta testcase secara berurutan
         for (int testcase = 0; testcase < testCases.length; testcase++) {
 
             MapData map = new MapData(testCases[testcase]);
@@ -82,6 +100,7 @@ public class Experiment {
             );
             System.out.println("=================================");
 
+            // Iterasi pengujian berdasarkan skema pengkodean kromosom
             for (boolean binary : representations) {
 
                 String representationName;
@@ -92,6 +111,7 @@ public class Experiment {
                     representationName = "Integer";
                 }
 
+                // Menyesuaikan himpunan operator mutasi yang kompatibel dengan tipe representasi kromosom
                 GeneticAlgorithm.MutationType[] mutations;
 
                 if (binary) {
@@ -109,6 +129,7 @@ public class Experiment {
                     };
                 }
 
+                // Perulangan bersarang untuk menguji seluruh kombinasi operator seleksi, crossover, dan mutasi
                 for (GeneticAlgorithm.SelectionType selection :
                      selections) {
 
@@ -118,6 +139,7 @@ public class Experiment {
                         for (GeneticAlgorithm.MutationType mutation :
                              mutations) {
 
+                            // Inisialisasi akumulator metrik evaluasi untuk 30 kali pengulangan pada konfigurasi aktif
                             double bestCost = Double.MAX_VALUE;
 
                             double worstCost =
@@ -137,10 +159,7 @@ public class Experiment {
                                 mutation
                             );
 
-                            // ======================================
-                            // REPETITION
-                            // ======================================
-
+                            // Menjalankan eksekusi GA berulang kali dengan seed deterministik agar hasil eksperimen dapat direproduksi
                             for (int repetition = 1;
                                  repetition <= REPETITIONS;
                                  repetition++) {
@@ -165,6 +184,7 @@ public class Experiment {
                                         random
                                     );
 
+                                // Mengukur durasi eksekusi algoritma dalam nanodetik dan mengonversinya ke milidetik
                                 long startTime =
                                     System.nanoTime();
 
@@ -180,7 +200,7 @@ public class Experiment {
 
                                 double cost = result.cost;
 
-                                // Statistik
+                                // Memperbarui nilai ekstrem (terbaik/terburuk) serta mengakumulasi nilai untuk perhitungan rata-rata
                                 if (cost < bestCost) {
                                     bestCost = cost;
                                 }
@@ -192,7 +212,7 @@ public class Experiment {
                                 totalCost += cost;
                                 totalRuntime += runtime;
 
-                                // Detail CSV
+                                // Mencatat metrik hasil eksekusi individual ke dalam file detail CSV
                                 detailWriter.write(
                                     (testcase + 1) + "," +
                                     representationName + "," +
@@ -218,10 +238,7 @@ public class Experiment {
                                 );
                             }
 
-                            // ======================================
-                            // SUMMARY
-                            // ======================================
-
+                            // Menghitung metrik rata-rata setelah seluruh repetisi selesai dan menyimpannya ke file ringkasan
                             double averageCost =
                                 totalCost / REPETITIONS;
 
@@ -267,10 +284,7 @@ public class Experiment {
                                 " ms"
                             );
 
-                            // ======================================
-                            // CEK OVERALL BEST
-                            // ======================================
-
+                            // Memperbarui rekor kombinasi parameter terbaik apabila rata-rata cost saat ini lebih rendah
                             if (averageCost <
                                 overallBestAverageCost) {
 
@@ -295,6 +309,7 @@ public class Experiment {
             }
         }
 
+        // Menutup stream file untuk memastikan seluruh buffer data tersimpan sempurna ke penyimpanan
         detailWriter.close();
         summaryWriter.close();
 
