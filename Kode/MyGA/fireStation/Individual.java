@@ -125,17 +125,25 @@ public class Individual {
 
 
     public static Individual createChild(
-            MapData map, int[] chromosome,
+        MapData map,
+        int[] chromosome,
+        boolean binaryRepresentation) {
+
+    return new Individual(
+        map, chromosome, binaryRepresentation
+    );
+}
+
+    // Constructor khusus untuk membuat child dari kromosom yang sudah tersedia
+    private Individual(
+            MapData map,
+            int[] chromosome,
             boolean binaryRepresentation) {
 
-        Individual child = new Individual(
-            map, binaryRepresentation, new Random()
-        );
+        this.binaryRepresentation = binaryRepresentation;
+        this.chromosome = chromosome.clone();
 
-        child.chromosome = chromosome;
-        child.calculateFitness(map);
-
-        return child;
+        calculateFitness(map);
     }
 
     // Memperbaiki jumlah Fire Station agar tetap p

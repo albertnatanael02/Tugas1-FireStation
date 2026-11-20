@@ -8,7 +8,7 @@ public class Main {
 
         MapData map = new MapData("fireStation/firestation_input.txt");
 
-        Random random = new Random();
+        Random random = new Random(12345);
 
         // Membuat population berisi 10 individu
         Population population = new Population(map, 10, true, random);
@@ -55,6 +55,7 @@ public class Main {
             System.out.println("Fitness: " + children[i].fitness);
         }
 
+        // Menguji Two-Point Crossover
         Individual[] children2 = population.twoPointCrossover(
             parent1, parent2, map, random
         );
@@ -203,15 +204,18 @@ public class Main {
         GeneticAlgorithm ga = new GeneticAlgorithm(
             map,
             true,
-            true,
+            GeneticAlgorithm.SelectionType.TOURNAMENT,
+            GeneticAlgorithm.CrossoverType.SINGLE_POINT,
+            GeneticAlgorithm.MutationType.SWAP,
+            GeneticAlgorithm.ReplacementType.ELITISM,
             10,
             100,
             0.8,
             0.1,
-            random
+            new Random(12345)
         );
 
-        Individual bestSolution = ga.run();
+        Individual bestSolution = ga.run(false);
 
         System.out.println("\nHasil Terbaik Genetic Algorithm:");
         System.out.println("Cost: " + bestSolution.cost);
@@ -222,16 +226,19 @@ public class Main {
         // Menggunakan Integer Representation dan Elitism
         GeneticAlgorithm ga2 = new GeneticAlgorithm(
             map,
-            false,  // Integer Representation
-            true,   // Elitism Replacement
-            10,     // Population Size
-            100,    // Maximum Generations
-            0.8,    // Crossover Rate
-            0.1,    // Mutation Rate
-            random
+            false,
+            GeneticAlgorithm.SelectionType.TOURNAMENT,
+            GeneticAlgorithm.CrossoverType.SINGLE_POINT,
+            GeneticAlgorithm.MutationType.RELOCATION,
+            GeneticAlgorithm.ReplacementType.ELITISM,
+            10,
+            100,
+            0.8,
+            0.1,
+            new Random(12345)
         );
 
-        Individual bestSolution2 = ga2.run();
+        Individual bestSolution2 = ga2.run(false);
 
         System.out.println("\nHasil Terbaik Genetic Algorithm Integer:");
         System.out.println("Cost: " + bestSolution2.cost);
