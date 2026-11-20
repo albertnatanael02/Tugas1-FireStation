@@ -1,20 +1,25 @@
 import java.util.Random;
 
+/**
+ * Mesin utama Algoritma Genetika (GA) untuk mencari solusi optimal pada data peta.
+ * Mengelola siklus evolusi mulai dari seleksi induk, rekombinasi (crossover), mutasi,
+ * hingga pembaruan generasi populasi berdasarkan konfigurasi operator yang ditentukan.
+ */
 public class GeneticAlgorithm {
 
-    // Pilihan metode Selection
+    /** Jenis metode pemilihan induk (parent selection). */
     public enum SelectionType {
         TOURNAMENT,
         ROULETTE
     }
 
-    // Pilihan metode Crossover
+    /** Jenis operator rekombinasi genetik (crossover) antar induk. */
     public enum CrossoverType {
         SINGLE_POINT,
         TWO_POINT
     }
 
-    // Pilihan metode Mutation
+    /** Jenis operator mutasi gen (SWAP & BIT_FLIP untuk biner; RANDOM_RESETTING & RELOCATION untuk integer). */
     public enum MutationType {
         SWAP,
         BIT_FLIP,
@@ -22,29 +27,52 @@ public class GeneticAlgorithm {
         RELOCATION
     }
 
-    // Pilihan metode Replacement
+    /** Strategi penggantian individu populasi pada setiap pergantian generasi. */
     public enum ReplacementType {
         ELITISM,
         GENERATIONAL
     }
 
+    /** Referensi data peta dan populasi aktif yang berevolusi. */
     MapData map;
     Population population;
+
+    /** Generator bilangan acak terpusat untuk menjamin reproduksibilitas eksperimen. */
     Random random;
 
+    /** Penanda skema pengkodean kromosom (true = biner, false = integer). */
     boolean binaryRepresentation;
 
+    /** Konfigurasi operator genetika yang dipilih untuk sesi eksekusi ini. */
     SelectionType selectionType;
     CrossoverType crossoverType;
     MutationType mutationType;
     ReplacementType replacementType;
 
+    /** Parameter ukuran populasi dan batas maksimum iterasi generasi. */
     int populationSize;
     int maxGenerations;
 
+    /** Parameter probabilitas terjadinya crossover dan mutasi (rentang 0.0 - 1.0). */
     double crossoverRate;
     double mutationRate;
 
+    /**
+     * Menginisialisasi mesin Algoritma Genetika, memvalidasi kesesuaian konfigurasi,
+     * dan membangkitkan populasi awal secara acak.
+     *
+     * @param map                  Objek data peta sebagai lingkungan evaluasi masalah.
+     * @param binaryRepresentation True jika menggunakan representasi biner, false jika integer.
+     * @param selectionType        Metode seleksi induk yang digunakan.
+     * @param crossoverType        Metode crossover yang digunakan.
+     * @param mutationType         Metode mutasi yang sesuai dengan tipe representasi.
+     * @param replacementType      Strategi penggantian generasi populasi.
+     * @param populationSize       Jumlah individu dalam populasi (minimal 2).
+     * @param maxGenerations       Batas maksimum generasi evolusi.
+     * @param crossoverRate        Probabilitas terjadinya crossover antar induk.
+     * @param mutationRate         Probabilitas terjadinya mutasi pada keturunan.
+     * @param random               Instans Random untuk operasi stokastik.
+     */
     public GeneticAlgorithm(
             MapData map,
             boolean binaryRepresentation,
@@ -74,7 +102,7 @@ public class GeneticAlgorithm {
 
         this.random = random;
 
-        // Memastikan konfigurasi operator sesuai representasi
+        // Memastikan parameter valid sebelum mengalokasikan memori populasi awal
         validateConfiguration();
 
         population = new Population(
@@ -82,7 +110,12 @@ public class GeneticAlgorithm {
         );
     }
 
-    // Memeriksa apakah kombinasi operator valid
+    /**
+     * Memvalidasi batasan ukuran populasi serta kompatibilitas antara jenis
+     * representasi kromosom dan operator mutasi yang dipilih.
+     *
+     * @throws IllegalArgumentException Jika ukuran populasi < 2 atau operator mutasi tidak sesuai representasi.
+     */
     private void validateConfiguration() {
 
         if (populationSize < 2) {
@@ -113,7 +146,13 @@ public class GeneticAlgorithm {
         }
     }
 
-    // Menyalin individu agar solusi terbaik tidak berubah
+    /**
+     * Membuat salinan mendalam (deep copy) dari sebuah individu dengan meng-clone
+     * array kromosomnya agar modifikasi pada salinan tidak memengaruhi individu asal.
+     *
+     * @param source Individu sumber yang akan disalin.
+     * @return Objek Individual baru yang independen dengan susunan gen identik.
+     */
     private Individual copyIndividual(Individual source) {
 
         return Individual.createChild(
@@ -123,7 +162,13 @@ public class GeneticAlgorithm {
         );
     }
 
-    // Memilih parent berdasarkan metode yang dipilih
+    /**
+     * Memilih satu individu induk dari populasi saat ini berdasarkan strategi
+     * seleksi yang dikonfigurasi.
+     *
+     * @return Individu terpilih yang akan digunakan dalam proses reproduksi.
+     * @throws IllegalStateException Jika tipe seleksi tidak dikenali.
+     */
     private Individual selectParent() {
 
         switch (selectionType) {
@@ -141,7 +186,15 @@ public class GeneticAlgorithm {
         }
     }
 
-    // Melakukan crossover berdasarkan representasi dan metode
+    /**
+     * Melakukan rekombinasi genetik (crossover) antara dua individu induk untuk
+     * menghasilkan keturunan baru sesuai skema representasi kromosom.
+     *
+     * @param parent1 Individu induk pertama.
+     * @param parent2 Individu induk kedua.
+     * @return Array berisi individu keturunan (offspring) hasil persilangan.
+     * @throws IllegalStateException Jika tipe crossover tidak dikenali.
+     */
     private Individual[] performCrossover(
             Individual parent1,
             Individual parent2) {
@@ -182,7 +235,12 @@ public class GeneticAlgorithm {
         );
     }
 
-    // Melakukan mutation berdasarkan metode yang dipilih
+    /**
+     * Menerapkan operasi mutasi pada individu keturunan sesuai tipe representasi
+     * dan operator mutasi aktif, kemudian mengevaluasi ulang nilai fitness-nya.
+     *
+     * @param child Individu keturunan yang akan dimutasi.
+     */
     private void performMutation(Individual child) {
 
         if (binaryRepresentation) {
@@ -215,14 +273,27 @@ public class GeneticAlgorithm {
         child.calculateFitness(map);
     }
     
-    // Menjalankan GA dengan output progress
+    /**
+     * Menjalankan proses evolusi Algoritma Genetika dengan menampilkan log
+     * perkembangan tiap generasi ke konsol secara default.
+     *
+     * @return Individu terbaik yang ditemukan sepanjang seluruh generasi.
+     */
     public Individual run() {
         return run(true);
     }
 
-    // Menjalankan GA dengan pilihan menampilkan progress
+    /**
+     * Mengeksekusi siklus utama Algoritma Genetika selama jumlah generasi maksimum.
+     * Mencakup proses seleksi induk, crossover, mutasi, penggantian populasi,
+     * serta pelacakan solusi terbaik global.
+     *
+     * @param showProgress True untuk mencetak ringkasan cost dan fitness tiap generasi ke konsol.
+     * @return Individu terbaik global dengan nilai cost terendah dari seluruh generasi.
+     */
     public Individual run(boolean showProgress) {
 
+        // Mencatat kandidat solusi terbaik dari populasi awal sebagai acuan pembanding
         Individual bestOverall = copyIndividual(
             population.getBestIndividual()
         );
@@ -236,17 +307,20 @@ public class GeneticAlgorithm {
 
             int index = 0;
 
+            // Mengisi populasi keturunan generasi baru hingga mencapai kapasitas populationSize
             while (index < populationSize) {
 
                 Individual parent1 = selectParent();
                 Individual parent2 = selectParent();
 
+                // Mencegah perkawinan sedarah (self-crossover) dengan memastikan kedua induk berbeda instans
                 while (parent1 == parent2) {
                     parent2 = selectParent();
                 }
 
                 Individual[] children;
 
+                // Menentukan apakah pasangan induk melakukan crossover atau langsung disalin ke generasi berikutnya
                 if (random.nextDouble() < crossoverRate) {
 
                     children = performCrossover(
@@ -261,6 +335,7 @@ public class GeneticAlgorithm {
                     };
                 }
 
+                // Mengevaluasi setiap keturunan baru, menerapkan mutasi jika memenuhi probabilitas, lalu menyimpannya
                 for (int i = 0; i < children.length; i++) {
 
                     if (random.nextDouble() < mutationRate) {
@@ -272,12 +347,14 @@ public class GeneticAlgorithm {
                     offspring[index] = children[i];
                     index++;
 
+                    // Berhenti lebih awal jika kuota populasi generasi baru sudah terpenuhi (antisipasi ukuran ganjil)
                     if (index >= populationSize) {
                         break;
                     }
                 }
             }
 
+            // Memperbarui populasi dengan strategi elitism (mempertahankan 1 elit) atau penggantian penuh
             if (replacementType == ReplacementType.ELITISM) {
 
                 population.elitismReplacement(
@@ -289,13 +366,13 @@ public class GeneticAlgorithm {
                 population.generationalReplacement(offspring);
             }
 
+            // Memperbarui rekor solusi terbaik global apabila generasi saat ini menghasilkan cost lebih rendah
             Individual best = population.getBestIndividual();
 
             if (best.cost < bestOverall.cost) {
                 bestOverall = copyIndividual(best);
             }
 
-            // Hanya mencetak progress jika showProgress bernilai true
             if (showProgress) {
                 System.out.println(
                     "Generation " + (generation + 1) +
