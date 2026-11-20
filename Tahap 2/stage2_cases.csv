@@ -1,0 +1,18 @@
+# Ganti path di bawah dengan 12 file peta TAHAP 2 yang berbeda dari Tahap 1.
+# Format: Size,Type,Path,EvaluationBudget
+# N20 memakai budget 50.000 (Small pada tabel tugas).
+# N40 memakai budget 200.000 (Normal pada tabel tugas).
+# Budget N60 belum tercantum pada tabel tugas, jadi isi sesuai ketentuan kelompok/dosen.
+Size,Type,Path,EvaluationBudget
+N20,acak,TestCases/n20/n20_acak_STAGE2_01.txt,50000
+N20,acak,TestCases/n20/n20_acak_STAGE2_02.txt,50000
+N20,cluster,TestCases/n20/n20_cluster_STAGE2_01.txt,50000
+N20,labirin,TestCases/n20/n20_labirin_STAGE2_01.txt,50000
+N40,acak,TestCases/n40/n40_acak_STAGE2_01.txt,200000
+N40,acak,TestCases/n40/n40_acak_STAGE2_02.txt,200000
+N40,cluster,TestCases/n40/n40_cluster_STAGE2_01.txt,200000
+N40,labirin,TestCases/n40/n40_labirin_STAGE2_01.txt,200000
+N60,acak,TestCases/n60/n60_acak_STAGE2_01.txt,ISI_BUDGET_N60
+N60,acak,TestCases/n60/n60_acak_STAGE2_02.txt,ISI_BUDGET_N60
+N60,cluster,TestCases/n60/n60_cluster_STAGE2_01.txt,ISI_BUDGET_N60
+N60,labirin,TestCases/n60/n60_labirin_STAGE2_01.txt,ISI_BUDGET_N60
