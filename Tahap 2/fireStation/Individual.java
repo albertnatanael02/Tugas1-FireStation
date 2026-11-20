@@ -2,37 +2,49 @@ package fireStation;
 
 import java.util.Random;
 
+/**
+ * Merepresentasikan satu kandidat solusi (individu) dalam Algoritma Genetika
+ * untuk optimasi penempatan p buah stasiun pemadam kebakaran (fire station).
+ * Mendukung skema pengkodean biner maupun integer, lengkap dengan evaluasi kualitas
+ * solusi (cost dan fitness) serta berbagai operator mutasi.
+ */
 public class Individual {
 
-    // Menentukan representasi kromosom yang digunakan
+    /** Penanda skema pengkodean kromosom (true = biner, false = integer). */
     boolean binaryRepresentation;
 
-    // Menyimpan kromosom
+    /** Susunan gen yang merepresentasikan lokasi penempatan stasiun pemadam kebakaran. */
     int[] chromosome;
 
-    // Menyimpan nilai cost dan fitness
+    /** Rata-rata jarak terdekat dari seluruh rumah ke stasiun pemadam (semakin kecil semakin baik). */
     double cost;
+
+    /** Nilai kebugaran individu hasil transformasi terbalik dari cost (semakin besar semakin baik). */
     double fitness;
 
-    // Constructor untuk membuat individu baru
+    /**
+     * Membangkitkan individu baru secara acak dengan menjamin tepat p stasiun
+     * ditempatkan pada sel kosong yang unik, lalu menghitung nilai fitness awalnya.
+     *
+     * @param map                  Objek data peta berisi daftar sel kosong, rumah, dan matriks jarak.
+     * @param binaryRepresentation True untuk pengkodean biner, false untuk pengkodean integer.
+     * @param random               Instans Random untuk pemilihan posisi acak.
+     */
     public Individual(MapData map, boolean binaryRepresentation, Random random) {
 
         this.binaryRepresentation = binaryRepresentation;
 
-        // Membuat kromosom berdasarkan representasi
         if (binaryRepresentation) {
 
-            // Binary: satu gen untuk setiap sel kosong
+            // Skema biner: panjang array sepanjang total sel kosong dengan tepat p elemen bernilai 1
             chromosome = new int[map.emptyCells.size()];
 
-            // Memilih tepat p lokasi fire station
             int count = 0;
 
             while (count < map.p) {
 
                 int position = random.nextInt(chromosome.length);
 
-                // Memastikan lokasi belum dipilih
                 if (chromosome[position] == 0) {
                     chromosome[position] = 1;
                     count++;
@@ -41,7 +53,7 @@ public class Individual {
 
         } else {
 
-            // Integer: satu gen untuk setiap fire station
+            // Skema integer: panjang array sebanyak p yang menyimpan indeks unik sel kosong
             chromosome = new int[map.p];
 
             int count = 0;
@@ -52,7 +64,7 @@ public class Individual {
 
                 boolean alreadySelected = false;
 
-                // Memeriksa apakah lokasi sudah dipilih
+                // Memastikan indeks sel kosong belum dipilih sebelumnya agar tidak terjadi duplikasi lokasi
                 for (int i = 0; i < count; i++) {
                     if (chromosome[i] == position) {
                         alreadySelected = true;
@@ -60,7 +72,6 @@ public class Individual {
                     }
                 }
 
-                // Menambahkan lokasi jika belum dipilih
                 if (!alreadySelected) {
                     chromosome[count] = position;
                     count++;
@@ -68,29 +79,31 @@ public class Individual {
             }
         }
 
-        // Menghitung cost dan fitness individu
         calculateFitness(map);
     }
 
-    // Menghitung cost dan fitness
+    /**
+     * Mengevaluasi kualitas solusi individu dengan menghitung rata-rata jarak
+     * terpendek dari setiap rumah ke stasiun terdekat (cost) serta nilai fitness-nya.
+     *
+     * @param map Objek data peta yang menyediakan matriks jarak antar rumah dan kandidat lokasi.
+     */
     public void calculateFitness(MapData map) {
 
         double totalDistance = 0;
 
-        // Menghitung jarak untuk setiap rumah
         for (int h = 0; h < map.houses.size(); h++) {
 
+            // Inisialisasi batas atas jarak maksimum berdasarkan dimensi peta (m x n)
             int minimumDistance = map.m * map.n;
 
-            // Memeriksa semua lokasi fire station
             for (int i = 0; i < chromosome.length; i++) {
 
                 int position;
 
-                // Mengambil lokasi yang dipilih
                 if (binaryRepresentation) {
 
-                    // Hanya gen bernilai 1 yang merupakan fire station
+                    // Pada representasi biner, abaikan sel bernilai 0 dan gunakan indeks array sebagai posisi stasiun
                     if (chromosome[i] == 0) {
                         continue;
                     }
@@ -99,14 +112,12 @@ public class Individual {
 
                 } else {
 
-                    // Integer langsung menyimpan indeks lokasi
+                    // Pada representasi integer, nilai gen secara langsung menunjuk indeks posisi stasiun
                     position = chromosome[i];
                 }
 
-                // Mengambil jarak dari rumah ke fire station
                 int distance = map.distances[h][position];
 
-                // Mencari jarak paling dekat
                 if (distance < minimumDistance) {
                     minimumDistance = distance;
                 }
@@ -115,14 +126,21 @@ public class Individual {
             totalDistance += minimumDistance;
         }
 
-        // Menghitung rata-rata jarak
         cost = totalDistance / map.houses.size();
 
-        // Fitness semakin besar jika cost semakin kecil
         fitness = 1.0 / (1.0 + cost);
     }
 
 
+    /**
+     * Metode pabrik (factory method) untuk membentuk objek individu anak baru
+     * dari array kromosom hasil proses crossover atau penyalinan.
+     *
+     * @param map                  Objek data peta untuk evaluasi fitness.
+     * @param chromosome           Array gen kromosom yang akan diwariskan ke individu baru.
+     * @param binaryRepresentation True jika kromosom menggunakan skema biner, false jika integer.
+     * @return Instans Individual baru yang telah terhitung nilai cost dan fitness-nya.
+     */
     public static Individual createChild(
         MapData map,
         int[] chromosome,
@@ -133,7 +151,14 @@ public class Individual {
     );
 }
 
-    // Constructor khusus untuk membuat child dari kromosom yang sudah tersedia
+    /**
+     * Konstruktor internal untuk menyalin kromosom secara mendalam (deep clone)
+     * dan langsung menghitung nilai fitness individu.
+     *
+     * @param map                  Objek data peta untuk evaluasi fitness.
+     * @param chromosome           Array gen kromosom sumber.
+     * @param binaryRepresentation Penanda skema pengkodean kromosom.
+     */
     private Individual(
             MapData map,
             int[] chromosome,
@@ -145,20 +170,26 @@ public class Individual {
         calculateFitness(map);
     }
 
-    // Memperbaiki jumlah Fire Station agar tetap p
+    /**
+     * Memperbaiki kromosom biner pasca-crossover atau mutasi agar jumlah gen
+     * bernilai 1 (stasiun aktif) tetap valid sebanyak tepat {@code map.p}.
+     *
+     * @param chromosome Array kromosom biner yang akan diperbaiki secara in-place.
+     * @param map        Objek data peta yang menyimpan target jumlah stasiun ({@code map.p}).
+     * @param random     Instans Random untuk memilih gen yang diubah secara acak.
+     */
     public static void repairChromosome(
             int[] chromosome, MapData map, Random random) {
 
         int count = 0;
 
-        // Menghitung jumlah Fire Station
         for (int i = 0; i < chromosome.length; i++) {
             if (chromosome[i] == 1) {
                 count++;
             }
         }
 
-        // Jika jumlahnya terlalu banyak, hapus secara acak
+        // Menurunkan gen bernilai 1 menjadi 0 secara acak apabila jumlah stasiun melebihi batas p
         while (count > map.p) {
             int position = random.nextInt(chromosome.length);
 
@@ -168,7 +199,7 @@ public class Individual {
             }
         }
 
-        // Jika jumlahnya kurang, tambahkan di lokasi kosong
+        // Menaikkan gen bernilai 0 menjadi 1 secara acak apabila jumlah stasiun kurang dari batas p
         while (count < map.p) {
             int position = random.nextInt(chromosome.length);
 
@@ -179,53 +210,66 @@ public class Individual {
         }
     }
 
+    /**
+     * Menerapkan mutasi pertukaran (swap) pada kromosom biner dengan memindahkan
+     * satu stasiun aktif (1) ke satu posisi kosong (0) sehingga jumlah p tetap terjaga.
+     *
+     * @param random Instans Random untuk memilih posisi gen yang ditukar.
+     */
     public void swapMutation(Random random) {
 
-        // Mencari posisi fire station (1)
         int position1;
         do {
             position1 = random.nextInt(chromosome.length);
         } while (chromosome[position1] != 1);
 
-        // Mencari posisi sel kosong (0)
         int position2;
         do {
             position2 = random.nextInt(chromosome.length);
         } while (chromosome[position2] != 0);
 
-        // Menukar posisi 1 dan 0
         chromosome[position1] = 0;
         chromosome[position2] = 1;
     }
 
+    /**
+     * Menerapkan mutasi pembalikan bit (bit-flip) pada satu gen acak kromosom biner,
+     * diikuti perbaikan jumlah stasiun dan perhitungan ulang nilai fitness.
+     *
+     * @param random Instans Random untuk memilih indeks gen yang dibalik.
+     * @param map    Objek data peta untuk perbaikan kromosom dan evaluasi fitness.
+     */
     public void bitFlipMutation(Random random, MapData map) {
 
-        // Memilih satu posisi secara acak
         int position = random.nextInt(chromosome.length);
 
-        // Mengubah 0 menjadi 1 atau 1 menjadi 0
         if (chromosome[position] == 0) {
             chromosome[position] = 1;
         } else {
             chromosome[position] = 0;
         }
 
-        // Memperbaiki kromosom agar jumlah fire station tetap p
         repairChromosome(chromosome, map, random);
 
-        // Menghitung ulang cost dan fitness
         calculateFitness(map);
     }
 
+    /**
+     * Menerapkan mutasi random resetting pada kromosom integer dengan mengganti
+     * satu lokasi stasiun menggunakan indeks sel kosong baru via rejection sampling,
+     * lalu menghitung ulang nilai fitness.
+     *
+     * @param random Instans Random untuk memilih stasiun dan posisi pengganti.
+     * @param map    Objek data peta untuk batas indeks sel kosong dan evaluasi fitness.
+     */
     public void randomResettingMutation(Random random, MapData map) {
 
-        // Memilih fire station yang akan dipindahkan
         int stationIndex = random.nextInt(chromosome.length);
 
-        // Mencari posisi baru yang belum digunakan
         int newPosition;
         boolean alreadySelected;
 
+        // Mengulang pemilihan posisi acak hingga ditemukan sel kosong yang belum ditempati stasiun lain
         do {
             newPosition = random.nextInt(map.emptyCells.size());
             alreadySelected = false;
@@ -238,22 +282,27 @@ public class Individual {
             }
         } while (alreadySelected);
 
-        // Mengganti posisi fire station
         chromosome[stationIndex] = newPosition;
 
-        // Menghitung ulang cost dan fitness
         calculateFitness(map);
     }
 
+    /**
+     * Menerapkan mutasi relokasi pada kromosom integer dengan menyaring seluruh
+     * kandidat sel kosong yang belum terpakai terlebih dahulu, memilih satu secara acak,
+     * memindahkan stasiun terpilih, dan menghitung ulang nilai fitness.
+     *
+     * @param random Instans Random untuk memilih stasiun dan posisi tujuan baru.
+     * @param map    Objek data peta berisi daftar sel kosong dan matriks jarak.
+     */
     public void relocationMutation(Random random, MapData map) {
 
-        // Memilih fire station yang akan dipindahkan
         int stationIndex = random.nextInt(chromosome.length);
 
-        // Membuat daftar posisi yang belum ditempati
         int[] availablePositions = new int[map.emptyCells.size()];
         int count = 0;
 
+        // Mengumpulkan seluruh indeks sel kosong yang saat ini tidak ditempati oleh stasiun mana pun
         for (int i = 0; i < map.emptyCells.size(); i++) {
             boolean alreadySelected = false;
 
@@ -270,14 +319,10 @@ public class Individual {
             }
         }
 
-        // Memilih salah satu posisi yang tersedia
         int newPosition = availablePositions[random.nextInt(count)];
 
-        // Memindahkan fire station
         chromosome[stationIndex] = newPosition;
 
-        // Menghitung ulang cost dan fitness
         calculateFitness(map);
     }
 }
-

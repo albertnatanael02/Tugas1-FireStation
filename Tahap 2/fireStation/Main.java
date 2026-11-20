@@ -3,14 +3,28 @@ package fireStation;
 import java.io.FileNotFoundException;
 import java.util.Random;
 
+/**
+ * Kelas penguji (test harness) untuk memverifikasi seluruh komponen Algoritma Genetika.
+ * Menguji inisialisasi populasi, operator seleksi, crossover (biner dan integer),
+ * mutasi, strategi penggantian generasi, hingga simulasi penuh GeneticAlgorithm.
+ */
 public class Main {
+
+    /**
+     * Titik masuk utama untuk menjalankan rangkaian uji coba fungsional setiap komponen GA
+     * menggunakan dataset peta uji tunggal dengan seed acak tetap.
+     *
+     * @param args Argumen baris perintah (tidak digunakan dalam pengujian ini).
+     * @throws FileNotFoundException Jika file dataset peta {@code fireStation/firestation_input.txt} tidak ditemukan.
+     */
     public static void main(String[] args) throws FileNotFoundException {
 
+        // Memuat data peta masalah dan menginisialisasi generator acak dengan seed tetap untuk pengujian konsisten
         MapData map = new MapData("fireStation/firestation_input.txt");
 
         Random random = new Random(12345);
 
-        // Membuat population berisi 10 individu
+        // Menginisialisasi populasi awal berisi 10 individu menggunakan skema pengkodean biner
         Population population = new Population(map, 10, true, random);
 
         System.out.println("Jumlah rumah: " + map.houses.size());
@@ -25,21 +39,21 @@ public class Main {
         System.out.println("Cost: " + best.cost);
         System.out.println("Fitness: " + best.fitness);
 
-        // Menguji Tournament Selection
+        // Pengujian operator seleksi induk berbasis turnamen (Tournament Selection)
         Individual parent = population.tournamentSelection(random);
 
         System.out.println("\nHasil Tournament Selection:");
         System.out.println("Cost Parent: " + parent.cost);
         System.out.println("Fitness Parent: " + parent.fitness);
 
-        // Menguji Roulette Wheel Selection
+        // Pengujian operator seleksi induk proporsional berbasis roda rolet (Roulette Wheel Selection)
         Individual rouletteParent = population.rouletteWheelSelection(random);
 
         System.out.println("\nHasil Roulette Wheel Selection:");
         System.out.println("Cost Parent: " + rouletteParent.cost);
         System.out.println("Fitness Parent: " + rouletteParent.fitness);
 
-        // Menguji Single-Point Crossover
+        // Pengujian rekombinasi satu titik (Single-Point Crossover) pada individu biner
         Individual parent1 = population.tournamentSelection(random);
         Individual parent2 = population.rouletteWheelSelection(random);
 
@@ -55,7 +69,7 @@ public class Main {
             System.out.println("Fitness: " + children[i].fitness);
         }
 
-        // Menguji Two-Point Crossover
+        // Pengujian rekombinasi dua titik (Two-Point Crossover) pada individu biner
         Individual[] children2 = population.twoPointCrossover(
             parent1, parent2, map, random
         );
@@ -68,6 +82,7 @@ public class Main {
             System.out.println("Fitness: " + children2[i].fitness);
         }
 
+        // Pengujian operator mutasi biner: Swap Mutation dan Bit-Flip Mutation
         Individual mutationTest = Individual.createChild(
             map, children2[0].chromosome.clone(), true
         );
@@ -97,7 +112,7 @@ public class Main {
         System.out.println("Cost: " + mutationTest2.cost);
         System.out.println("Fitness: " + mutationTest2.fitness);
 
-        // Pengujian Random Resetting Mutation
+        // Pengujian operator mutasi integer: Random Resetting dan Relocation Mutation
         Individual integerMutation1 = new Individual(map, false, random);
 
         System.out.println("\nSebelum Random Resetting Mutation:");
@@ -111,7 +126,6 @@ public class Main {
         System.out.println("Fitness: " + integerMutation1.fitness);
 
 
-        // Pengujian Relocation Mutation
         Individual integerMutation2 = new Individual(map, false, random);
 
         System.out.println("\nSebelum Relocation Mutation:");
@@ -124,10 +138,10 @@ public class Main {
         System.out.println("Cost: " + integerMutation2.cost);
         System.out.println("Fitness: " + integerMutation2.fitness);
 
+        // Pengujian pembaruan populasi menggunakan strategi Elitism dengan mempertahankan 1 individu terbaik
         System.out.println("\nSebelum Elitism Replacement:");
         System.out.println("Best Cost: " + population.getBestIndividual().cost);
 
-        // Menggunakan dua offspring hasil Two-Point Crossover
         population.elitismReplacement(children2, 1, random);
 
         System.out.println("\nSesudah Elitism Replacement:");
@@ -136,7 +150,7 @@ public class Main {
         System.out.println("\nPopulasi Baru:");
         population.displayPopulation();
 
-        // Membuat 10 offspring untuk Generational Replacement
+        // Membentuk 10 keturunan baru berpasangan untuk menguji penggantian populasi penuh (Generational Replacement)
         Individual[] generationChildren = new Individual[10];
 
         for (int i = 0; i < generationChildren.length; i += 2) {
@@ -156,7 +170,6 @@ public class Main {
             generationChildren[i + 1] = children[1];
         }
 
-        // Pengujian Generational Replacement
         System.out.println("\nSebelum Generational Replacement:");
         System.out.println("Best Cost: " + population.getBestIndividual().cost);
 
@@ -168,7 +181,7 @@ public class Main {
         System.out.println("\nPopulasi Baru:");
         population.displayPopulation();
 
-        // Menguji Integer One-Point Crossover
+        // Pengujian operator rekombinasi satu titik dan dua titik pada individu representasi integer
         Individual integerParent1 = new Individual(map, false, random);
         Individual integerParent2 = new Individual(map, false, random);
 
@@ -184,7 +197,6 @@ public class Main {
             System.out.println("Fitness: " + integerChildren[i].fitness);
         }
 
-        // Menguji Integer Two-Point Crossover
         Individual[] integerChildren2 = population.integerTwoPointCrossover(
             integerParent1, integerParent2, map, random
         );
@@ -197,10 +209,9 @@ public class Main {
             System.out.println("Fitness: " + integerChildren2[i].fitness);
         }
 
-        // Pengujian Genetic Algorithm
+        // Pengujian eksekusi end-to-end mesin GeneticAlgorithm untuk skema representasi Biner
         System.out.println("\n===== GENETIC ALGORITHM BINARY =====");
 
-        // Menggunakan Binary Representation dan Elitism
         GeneticAlgorithm ga = new GeneticAlgorithm(
             map,
             true,
@@ -221,9 +232,9 @@ public class Main {
         System.out.println("Cost: " + bestSolution.cost);
         System.out.println("Fitness: " + bestSolution.fitness);
 
+        // Pengujian eksekusi end-to-end mesin GeneticAlgorithm untuk skema representasi Integer
         System.out.println("\n===== GENETIC ALGORITHM INTEGER =====");
 
-        // Menggunakan Integer Representation dan Elitism
         GeneticAlgorithm ga2 = new GeneticAlgorithm(
             map,
             false,

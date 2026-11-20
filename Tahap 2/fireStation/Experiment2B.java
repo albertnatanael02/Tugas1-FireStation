@@ -7,11 +7,24 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Kelas utama untuk mengeksekusi eksperimen tahap 2B (uji kombinasi parameter terbaik).
+ * Membaca dua kandidat terbaik untuk ukuran populasi dan probabilitas crossover beserta
+ * parameter optimal mutasi dan elitisme dari hasil {@code Experiment2A}, lalu mengevaluasi
+ * seluruh kombinasi silangnya pada dataset peta uji yang ditentukan dan mencatat hasilnya ke CSV.
+ */
 public class Experiment2B {
 
+    /** Nama file manifest daftar skenario uji tahap 2. */
     private static final String MANIFEST = "stage2_cases.csv";
+
+    /** Nama file CSV konfigurasi optimal hasil keluaran Experiment2A. */
     private static final String CONFIG_FILE = "experiment2a_best_config.csv";
 
+    /**
+     * Struktur data internal untuk menampung konfigurasi parameter hasil seleksi
+     * Experiment2A bagi setiap model Algoritma Genetika.
+     */
     private static class ModelConfig {
         String model;
         int[] populations = new int[2];
@@ -20,6 +33,14 @@ public class Experiment2B {
         double elitism;
     }
 
+    /**
+     * Titik masuk utama program untuk menjalankan evaluasi kombinasi (grid search 2x2)
+     * antara dua ukuran populasi terbaik dan dua probabilitas crossover terbaik per model,
+     * serta menyimpan log detail dan ringkasan statistiknya ke file CSV.
+     *
+     * @param args Argumen baris perintah (tidak digunakan).
+     * @throws Exception Jika terjadi kesalahan pembacaan file konfigurasi/peta atau penulisan output CSV.
+     */
     public static void main(String[] args) throws Exception {
         String[] testCases = {
             "TestCases/n60/n60_acak_01.txt",
@@ -30,6 +51,7 @@ public class Experiment2B {
 
         List<ExperimentSupport.TestCase> cases = new ArrayList<>();
 
+        // Mengelompokkan setiap file testcase berdasarkan karakteristik petanya dengan anggaran 5000 evaluasi
         for (String path : testCases) {
             String type;
 
@@ -58,6 +80,7 @@ public class Experiment2B {
             summary.write("Model,Population,CrossoverRate,MutationRate,ElitismRate,RunCount,BestCost,AverageCost,WorstCost,AverageRuntimeMs");
             summary.newLine();
 
+            // Mengevaluasi seluruh kombinasi silang 2x2 (Populasi x Crossover) untuk setiap model GA
             for (int m = 0; m < models.length; m++) {
                 ExperimentSupport.Model model = models[m];
                 ModelConfig mc = findConfig(configs, model.name);
@@ -72,6 +95,7 @@ public class Experiment2B {
                             " | Cross=" + crossover + " | Mutation=" + mc.mutation +
                             " | Elitism=" + mc.elitism);
 
+                        // Menjalankan konfigurasi aktif pada seluruh peta uji dan menggabungkan statistiknya
                         for (ExperimentSupport.TestCase testCase : cases) {
                             ExperimentSupport.Stats oneCase = ExperimentSupport.runConfiguration(
                                 testCase, model, config, detail, "2B", "PopXCross",
@@ -99,6 +123,13 @@ public class Experiment2B {
         System.out.println("Output: experiment2b_detail.csv dan experiment2b_summary.csv");
     }
 
+    /**
+     * Membaca dan mem-parsing daftar konfigurasi parameter terbaik dari file CSV
+     * hasil keluaran {@code Experiment2A} untuk ketiga model (M1, M2, dan M3).
+     *
+     * @return Daftar objek {@link ModelConfig} yang telah divalidasi kelengkapannya.
+     * @throws Exception Jika file konfigurasi tidak ditemukan, format kolom salah, atau jumlah model bukan 3.
+     */
     private static List<ModelConfig> loadBestConfigs() throws Exception {
         List<ModelConfig> result = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new FileReader(CONFIG_FILE));
@@ -122,6 +153,14 @@ public class Experiment2B {
         return result;
     }
 
+    /**
+     * Mencari objek konfigurasi parameter yang sesuai dengan nama model tertentu.
+     *
+     * @param configs Daftar konfigurasi model yang telah dimuat dari CSV.
+     * @param name    Nama identitas model yang dicari.
+     * @return Objek {@link ModelConfig} yang cocok dengan nama model.
+     * @throws IllegalArgumentException Jika konfigurasi untuk nama model tersebut tidak ditemukan.
+     */
     private static ModelConfig findConfig(List<ModelConfig> configs, String name) {
         for (ModelConfig c : configs) if (c.model.equals(name)) return c;
         throw new IllegalArgumentException("Konfigurasi model tidak ditemukan: " + name);
