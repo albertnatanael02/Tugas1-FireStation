@@ -4,7 +4,7 @@ import java.util.Random;
 public class Main {
     public static void main(String[] args) throws FileNotFoundException {
 
-        MapData map = new MapData("fireStation/firestation_input.txt");
+        MapData map = new MapData("firestation_input.txt");
 
         Random random = new Random(12345);
 

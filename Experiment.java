@@ -1,6 +1,5 @@
 import java.io.BufferedWriter;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Random;
 
 public class Experiment {
@@ -10,12 +9,24 @@ public class Experiment {
     private static final int MAX_GENERATIONS = 100;
     private static final double CROSSOVER_RATE = 0.8;
     private static final double MUTATION_RATE = 0.1;
-    private static final int REPETITIONS = 10;
+    private static final int REPETITIONS = 30;
 
     public static void main(String[] args) throws Exception {
 
-        // Membaca data peta
-        MapData map = new MapData("fireStation/firestation_input.txt");
+        String[] testCases = {
+            "TestCases/n40/n40_acak_01.txt",
+            "TestCases/n40/n40_acak_02.txt",
+            "TestCases/n40/n40_acak_03.txt",
+            "TestCases/n40/n40_acak_04.txt",
+            "TestCases/n40/n40_klaster_01.txt",
+            "TestCases/n40/n40_klaster_02.txt",
+            "TestCases/n40/n40_klaster_03.txt",
+            "TestCases/n40/n40_klaster_04.txt",
+            "TestCases/n40/n40_labirin_01.txt",
+            "TestCases/n40/n40_labirin_02.txt",
+            "TestCases/n40/n40_labirin_03.txt",
+            "TestCases/n40/n40_labirin_04.txt"
+        };
 
         // Menyiapkan file CSV
         BufferedWriter detailWriter = new BufferedWriter(
@@ -28,188 +39,296 @@ public class Experiment {
 
         // Header CSV detail
         detailWriter.write(
-            "Representation,Selection,Crossover,Mutation," +
+            "TestCase,Representation,Selection,Crossover,Mutation," +
             "Repetition,Seed,BestCost,RuntimeMs"
         );
         detailWriter.newLine();
 
         // Header CSV summary
         summaryWriter.write(
-            "Representation,Selection,Crossover,Mutation," +
+            "TestCase,Representation,Selection,Crossover,Mutation," +
             "BestCost,AverageCost,WorstCost,AverageRuntimeMs"
         );
         summaryWriter.newLine();
 
-        // Dua jenis representasi
         boolean[] representations = {true, false};
 
-        // Semua metode selection
         GeneticAlgorithm.SelectionType[] selections = {
             GeneticAlgorithm.SelectionType.TOURNAMENT,
             GeneticAlgorithm.SelectionType.ROULETTE
         };
 
-        // Semua metode crossover
         GeneticAlgorithm.CrossoverType[] crossovers = {
             GeneticAlgorithm.CrossoverType.SINGLE_POINT,
             GeneticAlgorithm.CrossoverType.TWO_POINT
         };
 
-        // Menjalankan eksperimen
-        for (boolean binary : representations) {
+        // Menyimpan statistik overall
+        String overallBestCombination = "";
+        double overallBestAverageCost = Double.MAX_VALUE;
 
-            String representationName;
+        // ==========================================================
+        // LOOP TESTCASE
+        // ==========================================================
 
-            if (binary) {
-                representationName = "Binary";
-            } else {
-                representationName = "Integer";
-            }
+        for (int testcase = 0; testcase < testCases.length; testcase++) {
 
-            // Mutation disesuaikan dengan representasi
-            GeneticAlgorithm.MutationType[] mutations;
+            MapData map = new MapData(testCases[testcase]);
 
-            if (binary) {
-                mutations = new GeneticAlgorithm.MutationType[] {
-                    GeneticAlgorithm.MutationType.SWAP,
-                    GeneticAlgorithm.MutationType.BIT_FLIP
-                };
-            } else {
-                mutations = new GeneticAlgorithm.MutationType[] {
-                    GeneticAlgorithm.MutationType.RANDOM_RESETTING,
-                    GeneticAlgorithm.MutationType.RELOCATION
-                };
-            }
+            System.out.println("\n=================================");
+            System.out.println(
+                "TESTCASE " + (testcase + 1) +
+                " : " + testCases[testcase]
+            );
+            System.out.println("=================================");
 
-            for (GeneticAlgorithm.SelectionType selection : selections) {
+            for (boolean binary : representations) {
 
-                for (GeneticAlgorithm.CrossoverType crossover : crossovers) {
+                String representationName;
 
-                    for (GeneticAlgorithm.MutationType mutation : mutations) {
+                if (binary) {
+                    representationName = "Binary";
+                } else {
+                    representationName = "Integer";
+                }
 
-                        // Menyimpan statistik konfigurasi
-                        double bestCost = Double.MAX_VALUE;
-                        double worstCost = Double.MIN_VALUE;
-                        double totalCost = 0;
-                        double totalRuntime = 0;
+                GeneticAlgorithm.MutationType[] mutations;
 
-                        System.out.println(
-                            "\nMenjalankan: " +
-                            representationName + " | " +
-                            selection + " | " +
-                            crossover + " | " +
-                            mutation
-                        );
+                if (binary) {
 
-                        // Mengulang setiap konfigurasi
-                        for (int repetition = 1;
-                             repetition <= REPETITIONS;
-                             repetition++) {
+                    mutations = new GeneticAlgorithm.MutationType[] {
+                        GeneticAlgorithm.MutationType.SWAP,
+                        GeneticAlgorithm.MutationType.BIT_FLIP
+                    };
 
-                            // Seed sama untuk setiap konfigurasi
-                            int seed = 1000 + repetition;
+                } else {
 
-                            Random random = new Random(seed);
+                    mutations = new GeneticAlgorithm.MutationType[] {
+                        GeneticAlgorithm.MutationType.RANDOM_RESETTING,
+                        GeneticAlgorithm.MutationType.RELOCATION
+                    };
+                }
 
-                            // Membuat Genetic Algorithm
-                            GeneticAlgorithm ga = new GeneticAlgorithm(
-                                map,
-                                binary,
-                                selection,
-                                crossover,
-                                mutation,
-                                GeneticAlgorithm.ReplacementType.ELITISM,
-                                POPULATION_SIZE,
-                                MAX_GENERATIONS,
-                                CROSSOVER_RATE,
-                                MUTATION_RATE,
-                                random
+                for (GeneticAlgorithm.SelectionType selection :
+                     selections) {
+
+                    for (GeneticAlgorithm.CrossoverType crossover :
+                         crossovers) {
+
+                        for (GeneticAlgorithm.MutationType mutation :
+                             mutations) {
+
+                            double bestCost = Double.MAX_VALUE;
+
+                            double worstCost =
+                                Double.NEGATIVE_INFINITY;
+
+                            double totalCost = 0;
+
+                            double totalRuntime = 0;
+
+                            System.out.println(
+                                "\nMenjalankan: " +
+                                "Testcase " + (testcase + 1) +
+                                " | " +
+                                representationName + " | " +
+                                selection + " | " +
+                                crossover + " | " +
+                                mutation
                             );
 
-                            // Mengukur waktu eksekusi GA
-                            long startTime = System.nanoTime();
+                            // ======================================
+                            // REPETITION
+                            // ======================================
 
-                            Individual result = ga.run(false);
+                            for (int repetition = 1;
+                                 repetition <= REPETITIONS;
+                                 repetition++) {
 
-                            long endTime = System.nanoTime();
+                                int seed = 1000 + repetition;
 
-                            double runtime =
-                                (endTime - startTime) / 1_000_000.0;
+                                Random random = new Random(seed);
 
-                            double cost = result.cost;
+                                GeneticAlgorithm ga =
+                                    new GeneticAlgorithm(
+                                        map,
+                                        binary,
+                                        selection,
+                                        crossover,
+                                        mutation,
+                                        GeneticAlgorithm
+                                            .ReplacementType.ELITISM,
+                                        POPULATION_SIZE,
+                                        MAX_GENERATIONS,
+                                        CROSSOVER_RATE,
+                                        MUTATION_RATE,
+                                        random
+                                    );
 
-                            // Menghitung statistik
-                            if (cost < bestCost) {
-                                bestCost = cost;
+                                long startTime =
+                                    System.nanoTime();
+
+                                Individual result =
+                                    ga.run(false);
+
+                                long endTime =
+                                    System.nanoTime();
+
+                                double runtime =
+                                    (endTime - startTime)
+                                    / 1_000_000.0;
+
+                                double cost = result.cost;
+
+                                // Statistik
+                                if (cost < bestCost) {
+                                    bestCost = cost;
+                                }
+
+                                if (cost > worstCost) {
+                                    worstCost = cost;
+                                }
+
+                                totalCost += cost;
+                                totalRuntime += runtime;
+
+                                // Detail CSV
+                                detailWriter.write(
+                                    (testcase + 1) + "," +
+                                    representationName + "," +
+                                    selection + "," +
+                                    crossover + "," +
+                                    mutation + "," +
+                                    repetition + "," +
+                                    seed + "," +
+                                    cost + "," +
+                                    runtime
+                                );
+
+                                detailWriter.newLine();
+
+                                System.out.println(
+                                    "Repetition " +
+                                    repetition +
+                                    " | Best Cost: " +
+                                    cost +
+                                    " | Runtime: " +
+                                    runtime +
+                                    " ms"
+                                );
                             }
 
-                            if (cost > worstCost) {
-                                worstCost = cost;
-                            }
+                            // ======================================
+                            // SUMMARY
+                            // ======================================
 
-                            totalCost += cost;
-                            totalRuntime += runtime;
+                            double averageCost =
+                                totalCost / REPETITIONS;
 
-                            // Menyimpan hasil setiap percobaan
-                            detailWriter.write(
+                            double averageRuntime =
+                                totalRuntime / REPETITIONS;
+
+                            summaryWriter.write(
+                                (testcase + 1) + "," +
                                 representationName + "," +
                                 selection + "," +
                                 crossover + "," +
                                 mutation + "," +
-                                repetition + "," +
-                                seed + "," +
-                                cost + "," +
-                                runtime
+                                bestCost + "," +
+                                averageCost + "," +
+                                worstCost + "," +
+                                averageRuntime
                             );
 
-                            detailWriter.newLine();
+                            summaryWriter.newLine();
 
                             System.out.println(
-                                "Repetition " + repetition +
-                                " | Best Cost: " + cost +
-                                " | Runtime: " + runtime + " ms"
+                                "Ringkasan konfigurasi:"
                             );
+
+                            System.out.println(
+                                "Best Cost: " +
+                                bestCost
+                            );
+
+                            System.out.println(
+                                "Average Cost: " +
+                                averageCost
+                            );
+
+                            System.out.println(
+                                "Worst Cost: " +
+                                worstCost
+                            );
+
+                            System.out.println(
+                                "Average Runtime: " +
+                                averageRuntime +
+                                " ms"
+                            );
+
+                            // ======================================
+                            // CEK OVERALL BEST
+                            // ======================================
+
+                            if (averageCost <
+                                overallBestAverageCost) {
+
+                                overallBestAverageCost =
+                                    averageCost;
+
+                                overallBestCombination =
+                                    "TestCase " +
+                                    (testcase + 1) +
+                                    " | " +
+                                    representationName +
+                                    " | " +
+                                    selection +
+                                    " | " +
+                                    crossover +
+                                    " | " +
+                                    mutation;
+                            }
                         }
-
-                        // Menghitung rata-rata
-                        double averageCost =
-                            totalCost / REPETITIONS;
-
-                        double averageRuntime =
-                            totalRuntime / REPETITIONS;
-
-                        // Menyimpan ringkasan konfigurasi
-                        summaryWriter.write(
-                            representationName + "," +
-                            selection + "," +
-                            crossover + "," +
-                            mutation + "," +
-                            bestCost + "," +
-                            averageCost + "," +
-                            worstCost + "," +
-                            averageRuntime
-                        );
-
-                        summaryWriter.newLine();
-
-                        System.out.println("Ringkasan konfigurasi:");
-                        System.out.println("Best Cost: " + bestCost);
-                        System.out.println("Average Cost: " + averageCost);
-                        System.out.println("Worst Cost: " + worstCost);
-                        System.out.println(
-                            "Average Runtime: " + averageRuntime + " ms"
-                        );
                     }
                 }
             }
         }
 
-        // Menutup file CSV
         detailWriter.close();
         summaryWriter.close();
 
-        System.out.println("\n===== EKSPERIMEN SELESAI =====");
-        System.out.println("File experiment_detail.csv berhasil dibuat.");
-        System.out.println("File experiment_summary.csv berhasil dibuat.");
+        System.out.println(
+            "\n========================================"
+        );
+
+        System.out.println(
+            "===== EKSPERIMEN SELESAI ====="
+        );
+
+        System.out.println(
+            "Best Combination:"
+        );
+
+        System.out.println(
+            overallBestCombination
+        );
+
+        System.out.println(
+            "Best Average Cost: " +
+            overallBestAverageCost
+        );
+
+        System.out.println(
+            "========================================"
+        );
+
+        System.out.println(
+            "File experiment_detail.csv berhasil dibuat."
+        );
+
+        System.out.println(
+            "File experiment_summary.csv berhasil dibuat."
+        );
     }
 }
